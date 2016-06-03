@@ -1,7 +1,7 @@
 She's Lump
 ==========
 
-!()[https://s3.amazonaws.com/f.cl.ly/items/3f3T3k0J190X3l3G0M07/Screen%20Recording%202016-06-03%20at%2010.27%20PM.gif?v=2cab3bd2]
+![](https://s3.amazonaws.com/f.cl.ly/items/3f3T3k0J190X3l3G0M07/Screen%20Recording%202016-06-03%20at%2010.27%20PM.gif?v=2cab3bd2)
 
 Probably available online [here](http://notjosh.com/labs/sheslump/).
 
