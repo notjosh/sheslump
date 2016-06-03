@@ -60,7 +60,7 @@ a {
 </div>
 
 <div id="nooo" style="display: none;">
-	<p>okay you probably need a cooler browser for this (webgl + html audio).</p>
+	<p>okay you probably need a cooler browser for this (canvas + html audio).</p>
 </div>
 
 <div id="error" style="display: none;">
@@ -157,7 +157,7 @@ a {
 		try {
 			// https://github.com/mrdoob/three.js/blob/master/examples/js/Detector.js
 			var canvas = document.createElement('canvas');
-			compatible = !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+			compatible = !!(canvas.getContext('2d'));
 		} catch(e) {
 			compatible = false;
 		}
