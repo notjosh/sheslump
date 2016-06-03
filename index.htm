@@ -405,24 +405,25 @@ a {
 			var imageData = renderContext.getImageData(0, 0, $renderCanvas.width, $renderCanvas.height);
 
 			var lastWhiteOffset = false; // optimisation to skip runs in big blobs of filled text
-			for (var offset = 0; offset < imageData.data.length; offset += 4) {
-				var x = (offset / 4) % $renderCanvas.width;
-				var y = (offset / 4) / $renderCanvas.width;
+			for (var y = 0; y < imageData.height; y++) {
+				for (var x = 0; x < imageData.width; x++) {
+					var offset = x * 4 + y * imageData.height * 4;
 
-				if (imageData.data[offset] < 255 &&
-					imageData.data[offset + 1] < 255 &&
-					imageData.data[offset + 2] < 255) {
+					if (imageData.data[offset] < 255 &&
+						imageData.data[offset + 1] < 255 &&
+						imageData.data[offset + 2] < 255) {
 
-					if (offset - lastWhiteOffset > WHITE_RUN_THRESHOLD) {
-						textPixels.push({
-							x: x,
-							y: y
-						});
+						if (offset - lastWhiteOffset > WHITE_RUN_THRESHOLD) {
+							textPixels.push({
+								x: x,
+								y: y
+							});
 
-						lastWhiteOffset = offset + (Math.random() * WHITE_RUN_THRESHOLD); // add some randomness to keep it from looking super uniform
+							lastWhiteOffset = offset + (Math.random() * WHITE_RUN_THRESHOLD); // add some randomness to keep it from looking super uniform
+						}
+					} else {
+						lastWhiteOffset = offset - (Math.random() * WHITE_RUN_THRESHOLD);
 					}
-				} else {
-					lastWhiteOffset = offset - (Math.random() * WHITE_RUN_THRESHOLD);
 				}
 			}
 
