@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+
+	<title>SHE'S LUMP</title>
+
+<style type="text/css">
+html, body, div, p {
+	margin: 0;
+	padding: 0;
+	font-family: Helvetica, sans-serif;
+}
+
+#loading, #nooo, #error {
+	padding: 20px;
+}
+
+#boogie {
+	position: absolute;
+
+	top: 50%;
+	left: 50%;
+
+	height: 500px;
+	width: 500px;
+	margin-top: -250px;
+	margin-left: -250px;
+}
+
+a {
+	color: #eee;
+}
+
+#yo {
+	position: fixed;
+	bottom: 10px;
+	right: 10px;
+
+	padding: 10px;
+
+	font-size: 0.8em;
+
+	color: #fff;
+
+	background-color: #000;
+	border: 1px solid #666;
+}
+
+#yo p,
+#yo div {
+        margin: 0; padding: 0;
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+	<p>loading...</p>
+</div>
+
+<div id="nooo" style="display: none;">
+	<p>okay you probably need a cooler browser for this (webgl + html audio).</p>
+</div>
+
+<div id="error" style="display: none;">
+	<p>welp, something went wrong. I dunno. you figure it out 💯.</p>
+</div>
+
+<div id="boogie" style="display: none;">
+	<button id="play">play</button>
+	<button id="stop">stop</button>
+
+	<canvas id="canvas" width="500" height="500"></canvas>
+</div>
+
+<div id="yo">
+	<p>
+		<a href="https://twitter.com/notjosh">@notjosh</a>
+		/
+		<a href="https://github.com/notjosh/sheslump">github</a>
+	</p>
+</div>
+
+<script type="text/javascript">
+
+(function() {
+	var SHES_LUMP_DOT_WAV = 'asset/sheslump.wav';
+
+	var $loading = document.getElementById('loading');
+	var $nooo = document.getElementById('nooo');
+	var $error = document.getElementById('error');
+	var $boogie = document.getElementById('boogie');
+	var $canvas = document.getElementById('canvas');
+
+	var $audio = {
+		play: document.getElementById('play'),
+		stop: document.getElementById('stop')
+	};
+
+	var Audio = function(URL) {
+		this.URL = URL;
+		this.context = new window.AudioContext();
+		this.buffer = {};
+		this.source = null;
+		this.onPlay = null;
+		this.onStop = null;
+		this.playing = false;
+		this.startTime = 0;
+		this.play = function() {
+			if (this.playing) {
+				return;
+			}
+
+			this.source = this.context.createBufferSource();
+			this.source.buffer = this.buffer;
+			this.source.loop = true;
+			this.source.connect(this.context.destination);
+
+			this.source.start();
+			this.playing = true;
+			this.startTime = this.context.currentTime;
+
+			if (this.onPlay) {
+				this.onPlay();
+			}
+		};
+		this.stop = function() {
+			if (!this.playing) {
+				return;
+			}
+
+			this.source.stop();
+			this.playing = false;
+
+			if (this.onStop) {
+				this.onStop();
+			}
+
+			this.playing = false;
+		};
+
+		return this;
+	};
+
+	var audio = null;
+
+	var display = function(section) {
+		$loading.style.display = (section == 'loading') ? '' : 'none';
+		$error.style.display    = (section == 'error') ? '' : 'none';
+		$nooo.style.display    = (section == 'nooo') ? '' : 'none';
+		$boogie.style.display  = (section == 'boogie') ? '' : 'none';
+	};
+
+	var hasWebGL = function() {
+		var compatible = false;
+		try {
+			// https://github.com/mrdoob/three.js/blob/master/examples/js/Detector.js
+			var canvas = document.createElement('canvas');
+			compatible = !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+		} catch(e) {
+			compatible = false;
+		}
+
+		return compatible;
+	};
+
+	var hasWebAudio = function() {
+		var compatible = false;
+		try {
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			var context = new window.AudioContext();
+			compatible = true;
+		} catch(e) {
+			compatible = false;
+		}
+
+		return compatible;
+	};
+
+	var compatible = function() {
+		return hasWebGL() && hasWebAudio();
+	};
+
+	display('loading');
+
+	if (!compatible()) {
+		display('nooo');
+
+		return;
+	}
+
+	audio = Audio(SHES_LUMP_DOT_WAV);
+
+	var ShesLumpLoopWitness = function() {
+		this.onStart = null;
+		this.onShes = null;
+		this.onLump = null;
+
+		this._state = null;
+
+		this._previousTime = 0;
+		this._previousTime = 0;
+
+		this._audio = null;
+		this._token = null;
+
+		this._timing = {
+			SHES: 0.152,
+			LUMP: 0.4
+		}
+
+		var toggleState = function(state) {
+			if (state != this._state) {
+				this._state = state;
+
+				if (this.onStart && this._state == 'start') { this.onStart(); }
+				if (this.onStart && this._state == 'shes') { this.onShes(); }
+				if (this.onStart && this._state == 'lump') { this.onLump(); }
+			}
+		};
+
+		var tick = function() {
+			var currentTime = this._audio.context.currentTime;
+
+			if (currentTime - this._previousTime > 0.02) {
+				var loopTime = (currentTime - this._audio.startTime) % this._audio.buffer.duration;
+
+				if (loopTime < this._timing.SHES) {
+					toggleState('start');
+				} else if (loopTime >= this._timing.SHES && loopTime < this._timing.LUMP) {
+					toggleState('shes');
+				} else if (loopTime >= this._timing.LUMP) {
+					toggleState('lump');
+				}
+
+				this._previousTime = currentTime;
+			}
+
+			this._token = requestAnimationFrame(tick);
+		};
+
+		this.watch = function(audio) {
+			this._audio = audio;
+			this._previousTime = 0;
+			this._state = null;
+
+			tick();
+		};
+
+		this.unwatch = function() {
+			if (this._token) {
+				cancelAnimationFrame(this._token);
+			}
+
+			this._audio = null;
+			this._previousTime = 0;
+			this._state = null;
+		};
+
+		return this;
+	};
+
+	var ShesLumpBlinky = function($canvas, $renderCanvas) {
+		// inspired by http://cssdeck.com/labs/cool-canvas-particles-text-effect
+		if (!$renderCanvas) {
+			$renderCanvas = document.createElement('canvas');
+			$renderCanvas.width = $canvas.width;
+			$renderCanvas.height = $canvas.height;
+		}
+
+		var context = $canvas.getContext('2d');
+		var renderContext = $renderCanvas.getContext('2d');
+
+		var NUMBER_OF_PARTICLES = 1000;
+		var NEIGHBOUR_DISTANCE = 9;
+		var WHITE_RUN_THRESHOLD = 25;
+
+		var particles = [];
+
+		var fontSizeCache = {};
+		var textPixelsForTextCache = {};
+
+		var Particle = function() {
+			var r = Math.round(Math.random() * 255);
+			var g = Math.round(Math.random() * 255);
+			var b = Math.round(Math.random() * 255);
+			var a = 0.85;
+
+			var x = 0;
+			var y = 0;
+
+			var radius = 5 + Math.round(Math.random() * 5);
+
+			return {
+				r: r,
+				g: g,
+				b: b,
+				a: a,
+
+				x: x,
+				y: y,
+
+				radius: radius
+			};
+		}
+
+		var init = function(numberOfParticles) {
+			for (var i = 0; i < numberOfParticles; i++) {
+				var particle = Particle();
+
+				particles.push(particle);
+			}
+		}
+
+		var draw = function() {
+			context.fillStyle = 'rgba(255, 255, 255, 1)';
+			context.fillRect(0, 0, $canvas.width, $canvas.height);
+
+			for (var idx in particles) {
+				var particle = particles[idx];
+
+				if (particle.x == null || particle.y == null) {
+					continue;
+				}
+
+				context.fillStyle = 'rgba(' + particle.r + ', ' + particle.g + ', ' + particle.b + ', ' + particle.a + ')';
+				context.beginPath();
+				context.arc(particle.x, particle.y, particle.radius, 0, 2 * Math.PI);
+				context.fill();
+			}
+
+			requestAnimationFrame(draw);
+		};
+
+		var maxFontSize = function(text, face) {
+			if (!fontSizeCache[text]) {
+				var MAX_FONT_SIZE = 350;
+				var PADDING = 40;
+
+				var fontSize = MAX_FONT_SIZE;
+				do {
+					fontSize--;
+					renderContext.font = fontSize + 'px ' + face;
+				} while(renderContext.measureText(text).width > $renderCanvas.width - PADDING ||
+						renderContext.measureText(text).height > $renderCanvas.height - PADDING);
+
+    			fontSizeCache[text] = fontSize;
+			}
+
+			return fontSizeCache[text];
+		}
+
+		var dist = function(x1, y1, x2, y2) {
+			return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+		};
+
+		var findNearest = function(points, x, y) {
+			var nearest = {
+				x: null,
+				y: null,
+				distance: null
+			};
+
+			for (var i = 0; i < points.length; i++) {
+				var point = points[i];
+
+				var distance = dist(point.x, point.y, x, y);
+
+				if (i == 0 || distance < nearest.distance) {
+					nearest.x = point.x;
+					nearest.y = point.y;
+					nearest.distance = distance;
+				}
+			}
+
+			// mark all neighbouring points as invalid
+			for (var i = 0; i < points.length; i++) {
+				var point = points[i];
+
+				var distance = dist(point.x, point.y, nearest.x, nearest.y);
+
+				if (distance < NEIGHBOUR_DISTANCE) {
+					points.splice(i, 1);
+					i--;
+				}
+			}
+
+			return {
+				x: nearest.x,
+				y: nearest.y
+			};
+		}
+
+		var textPixelsForText = function(text) {
+			if (textPixelsForTextCache[text]) {
+				return textPixelsForTextCache[text].slice();
+			}
+
+			var textPixels = [];
+
+			renderContext.fillStyle = 'rgba(255, 255, 255, 1)';
+			renderContext.fillRect(0, 0, $renderCanvas.width, $renderCanvas.height);
+
+			var fontSize = maxFontSize(text, 'Helvetica');
+			
+			renderContext.font = fontSize + 'px Helvetica';
+			renderContext.fillStyle = 'rgba(0, 0, 0, 1)';
+			renderContext.fillText(text, 5, 275);
+
+			var imageData = renderContext.getImageData(0, 0, $renderCanvas.width, $renderCanvas.height);
+
+			var lastWhiteOffset = false; // optimisation to skip runs in big blobs of filled text
+			for (var offset = 0; offset < imageData.data.length; offset += 4) {
+				var x = (offset / 4) % $renderCanvas.width;
+				var y = (offset / 4) / $renderCanvas.width;
+
+				if (imageData.data[offset] < 255 &&
+					imageData.data[offset + 1] < 255 &&
+					imageData.data[offset + 2] < 255) {
+
+					if (offset - lastWhiteOffset > WHITE_RUN_THRESHOLD) {
+						textPixels.push({
+							x: x,
+							y: y
+						});
+
+						lastWhiteOffset = offset + (Math.random() * WHITE_RUN_THRESHOLD); // add some randomness to keep it from looking super uniform
+					}
+				} else {
+					lastWhiteOffset = offset - (Math.random() * WHITE_RUN_THRESHOLD);
+				}
+			}
+
+			textPixelsForTextCache[text] = textPixels;
+
+			return textPixelsForTextCache[text].slice();
+		};
+
+		var setText = function(text) {
+			// if text, figure out outlines for particles to snap to
+			var textPixels = [];
+
+			if (text) {
+				textPixels = textPixelsForText(text);
+			}
+			
+			for (var idx in this.particles) {
+				var particle = this.particles[idx];
+
+				if (text) {
+					// shuffle particle first. nicer random effect :)
+					particle.x = particle.x == null ? Math.round(Math.random() * $canvas.width) : particle.x;
+					particle.y = particle.y == null ? Math.round(Math.random() * $canvas.height) : particle.y;
+
+					var pointOnLine = findNearest(textPixels, particle.x, particle.y);
+
+					particle.x = pointOnLine.x;
+					particle.y = pointOnLine.y;
+				} else {
+					particle.x = null;
+					particle.y = null;
+				}
+			}
+		};
+
+		init(NUMBER_OF_PARTICLES);
+		draw();
+
+		return {
+			particles: particles,
+
+			setText: setText
+		};
+	};
+
+	var witness = ShesLumpLoopWitness();
+	var blinky;
+	witness.onStart = function() {
+		blinky.setText(null);
+	};
+
+	witness.onShes = function() {
+		blinky.setText('she\'s');
+	};
+
+	witness.onLump = function() {
+		blinky.setText('lump');	
+	};
+
+	audio.onPlay = function() {
+		$audio.play.disabled = true;
+		$audio.stop.disabled = false;
+
+		blinky.setText(null);
+
+		witness.watch(audio);
+	};
+
+	audio.onStop = function() {
+		$audio.play.disabled = false;
+		$audio.stop.disabled = true;
+
+		blinky.setText(null);
+
+		witness.unwatch();
+	};
+
+	var preload = function(callback) {
+		// load audio
+		var req = new XMLHttpRequest();
+		req.open('GET', SHES_LUMP_DOT_WAV, true);
+		req.responseType = 'arraybuffer';
+		req.onload = function() {
+			audio.context.decodeAudioData(
+				req.response,
+				function(buffer) {
+					audio.buffer = buffer;
+					//audio.source_loop[i] = {};
+					//var button = document.getElementById('button-loop-' + i);
+					//button.addEventListener('click', function(e) {
+					//	e.preventDefault();
+					//	audio.play(this.value, false);
+					//});
+					//audio.play(this.value, false);
+
+					callback(null);
+				},
+				function() {
+					callback('can\'t decode :(');
+				}
+			);
+		};
+		req.send();
+	};
+
+	var play = function() {
+		audio.play();
+	};
+
+	var stop = function() {
+		audio.stop();
+	};
+
+	$audio.play.addEventListener('click', function() {
+		play();
+	});
+
+	$audio.stop.addEventListener('click', function() {
+		stop();
+	});
+
+	var go = function() {
+		display('boogie');
+
+		play();
+	};
+
+	preload(function(error) {
+		if (error) {
+			display('error');
+			return;
+		}
+
+		blinky = new ShesLumpBlinky($canvas);
+
+		go();
+	});
+
+})();
+
+</script>
+
+</body>
+</html>
