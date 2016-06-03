@@ -193,72 +193,66 @@ a {
 	audio = Audio(SHES_LUMP_DOT_WAV);
 
 	var ShesLumpLoopWitness = function() {
-		this.onStart = null;
-		this.onShes = null;
-		this.onLump = null;
+		var _state = null;
 
-		this._state = null;
-
-		this._previousTime = 0;
-		this._previousTime = 0;
+		var _previousTime = 0;
+		var _previousTime = 0;
 
 		this._audio = null;
 		this._token = null;
 
-		this._timing = {
+		var _timing = {
 			SHES: 0.152,
 			LUMP: 0.4
 		}
 
-		var toggleState = function(state) {
-			if (state != this._state) {
-				this._state = state;
+		this.toggleState = function(state) {
+			if (state != _state) {
+				_state = state;
 
-				if (this.onStart && this._state == 'start') { this.onStart(); }
-				if (this.onStart && this._state == 'shes') { this.onShes(); }
-				if (this.onStart && this._state == 'lump') { this.onLump(); }
+				if (this.onStart && _state == 'start') { this.onStart(); }
+				if (this.onStart && _state == 'shes') { this.onShes(); }
+				if (this.onStart && _state == 'lump') { this.onLump(); }
 			}
 		};
 
-		var tick = function() {
+		this._tick = function() {
 			var currentTime = this._audio.context.currentTime;
 
-			if (currentTime - this._previousTime > 0.02) {
+			if (currentTime - _previousTime > 0.02) {
 				var loopTime = (currentTime - this._audio.startTime) % this._audio.buffer.duration;
 
-				if (loopTime < this._timing.SHES) {
-					toggleState('start');
-				} else if (loopTime >= this._timing.SHES && loopTime < this._timing.LUMP) {
-					toggleState('shes');
-				} else if (loopTime >= this._timing.LUMP) {
-					toggleState('lump');
+				if (loopTime < _timing.SHES) {
+					this.toggleState('start');
+				} else if (loopTime >= _timing.SHES && loopTime < _timing.LUMP) {
+					this.toggleState('shes');
+				} else if (loopTime >= _timing.LUMP) {
+					this.toggleState('lump');
 				}
 
-				this._previousTime = currentTime;
+				_previousTime = currentTime;
 			}
 
-			this._token = requestAnimationFrame(tick);
+			_token = requestAnimationFrame((function() { this._tick() }).bind(this));
 		};
+	};
 
-		this.watch = function(audio) {
-			this._audio = audio;
-			this._previousTime = 0;
-			this._state = null;
+	ShesLumpLoopWitness.prototype.watch = function(audio) {
+		this._audio = audio;
+		this._previousTime = 0;
+		this._state = null;
 
-			tick();
-		};
+		this._tick();
+	};
 
-		this.unwatch = function() {
-			if (this._token) {
-				cancelAnimationFrame(this._token);
-			}
+	ShesLumpLoopWitness.prototype.unwatch = function() {
+		if (this._token) {
+			cancelAnimationFrame(this._token);
+		}
 
-			this._audio = null;
-			this._previousTime = 0;
-			this._state = null;
-		};
-
-		return this;
+		this._audio = null;
+		this._previousTime = 0;
+		this._state = null;
 	};
 
 	var ShesLumpBlinky = function($canvas, $renderCanvas) {
@@ -474,7 +468,7 @@ a {
 		};
 	};
 
-	var witness = ShesLumpLoopWitness();
+	var witness = new ShesLumpLoopWitness();
 	var blinky;
 	witness.onStart = function() {
 		blinky.setText(null);
