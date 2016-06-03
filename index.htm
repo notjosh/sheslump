@@ -547,6 +547,17 @@ a {
 	var go = function() {
 		display('boogie');
 
+		try {
+			var userAgent = navigator.userAgent || navigator.vendor;
+			if (userAgent.match(/iPad/i) || userAgent.match(/iPhone/i) || userAgent.match(/iPod/i)) {
+				// ugh
+				audio.onStop();
+				return;
+			}
+		} catch(e) {
+			// whatev
+		}
+
 		play();
 	};
 
